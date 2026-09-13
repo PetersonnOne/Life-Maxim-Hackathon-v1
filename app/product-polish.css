@@ -1,0 +1,20 @@
+.built-with-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;padding:24px 5%;border-top:1px solid var(--border);background:var(--background);color:var(--muted-foreground);font-size:12px;line-height:1.6}
+.built-with-footer a{display:inline-flex;align-items:center;gap:7px;min-height:32px;text-decoration:underline;text-underline-offset:3px}
+.built-with-footer a:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:3px}
+.built-with-footer img{width:86px;height:24px;object-fit:contain}
+.convex-logo-dark{display:none}
+/* The app explicitly resolves to light. A future manual dark theme takes priority. */
+:is(.dark,[data-theme="dark"]) .built-with-footer{background:#10162b;color:#d5daed;border-color:#39425e}
+:is(.dark,[data-theme="dark"]) .convex-logo-light{display:none}
+:is(.dark,[data-theme="dark"]) .convex-logo-dark{display:block}
+.privacy-page{max-width:860px;margin:auto;padding:48px 6%;line-height:1.8}
+.privacy-page h1{font-size:clamp(30px,5vw,42px);line-height:1.2;letter-spacing:-1px;margin:25px 0}
+.privacy-page h2{font-size:22px;font-weight:600;margin:30px 0 12px}
+.privacy-page p{margin:12px 0;color:#4f596b}
+.privacy-page ul{list-style:disc;padding-left:24px}
+.privacy-page li{margin:12px 0;color:#4f596b}
+.privacy-page a{text-decoration:underline;text-underline-offset:4px}
+.workspace-body [data-slot="tabs-list"]{max-width:100%;overflow-x:auto;justify-content:flex-start}
+.workspace-body [data-slot="tabs-trigger"]{flex-shrink:0}
+.stack-form>button{white-space:normal;min-height:40px;height:auto}
+@media(max-width:700px){.objective-heading>div{flex-wrap:wrap}.objective-heading select{margin-left:0}.built-with-footer{justify-content:flex-start}.privacy-page{padding-top:30px}}
