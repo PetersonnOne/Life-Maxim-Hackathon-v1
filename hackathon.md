@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth
 - **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; backend audio probe passed, browser acceptance pending); gpt-4o-mini-tts and gpt-image-2 (implemented, media acceptance pending)
 - **Started:** 2026-09-10T02:42:52Z
-- **Last updated:** 2026-09-21T18:52:14Z
+- **Last updated:** 2026-09-21T19:37:44Z
 
 ## Log
 
@@ -93,3 +93,7 @@ Deployed the validated schema, indexes, functions, HTTP routes, scheduled jobs a
 Moved the frontend deployment to the owner's current ChatGPT Sites account while preserving the same validated application source and Convex production backend. The replacement public Site reached version 1 and its canonical live URL was confirmed by the hosting platform; the browser bundle contains the exact production Convex URL and excludes the development deployment URL (`.openai/hosting.json`).
 
 Configured production `APP_URL` to the canonical replacement Site, `https://life-maxim.newrealmlevel.chatgpt.site`. A public HTTP check returned 200 and identified the Life Maxim application; this aligns authentication callbacks and application links with the live frontend without copying development data or redeploying code.
+
+Completed a real public production journey with a disposable account: signup, profile and entry creation, Terra guidance, a saved article transformation, text download, refresh persistence, sign-out and returning sign-in all passed. The theme preference also persisted. Interactive Mode reached its explicit Start voice control and handled denied microphone permission without creating a paid provider session.
+
+A follow-up release check caught a frontend bundle built against the development Convex URL. The affected version was immediately rolled back; a corrected build contains the production URL and no development URL. This check is now part of the release evidence before republishing.

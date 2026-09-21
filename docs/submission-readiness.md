@@ -22,8 +22,9 @@ Reviewed September 21, 2026. A saved implementation is not an end-to-end accepta
 
 ## Priority before the hackathon deadline
 
-1. Run authenticated production browser acceptance for original Auth, the emerald
-   theme, profile/entry creation and the principal dashboard journeys.
+1. Authenticated production browser acceptance now passes for original Auth,
+   profile/entry creation, Terra guidance, a saved text transformation/download,
+   refresh persistence, sign-out/sign-in and theme persistence.
 2. Prove actual Interactive Mode / Discuss with AI voice connection and shutdown.
    A successful model lookup alone is insufficient. Test text, MP3 and infographic
    transformations, downloads, persistence and deletion.

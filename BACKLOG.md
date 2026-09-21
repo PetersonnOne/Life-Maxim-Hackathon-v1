@@ -186,8 +186,11 @@ See `docs/product-controls.md` for behavior and remaining acceptance steps.
 - [x] Production Convex setup and deployment completed with explicit approval.
 - [x] ChatGPT Sites registration, production build and publication completed. The
   public homepage returns HTTP 200 and identifies Life Maxim.
-- [ ] Complete authenticated production browser acceptance and the final demo video,
-  social post and submission form. The public repo and evidence log are ready.
+- [x] Authenticated production browser acceptance passed for signup, profile and
+  entry creation, Terra guidance, saved text transformation/download, persistence,
+  sign-out/sign-in and theme preference. Browser microphone audio remains manual.
+- [ ] Complete the final demo video, social post and submission form. The public
+  repo and evidence log are ready.
 
 ## Interactive Mode — implemented pilot; acceptance in progress
 
