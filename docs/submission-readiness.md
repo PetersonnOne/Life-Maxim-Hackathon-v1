@@ -1,6 +1,6 @@
 # Life Maxim — remaining work and submission readiness
 
-Reviewed September 20, 2026. A saved implementation is not an end-to-end acceptance pass.
+Reviewed September 21, 2026. A saved implementation is not an end-to-end acceptance pass.
 
 ## Confirmed release decisions
 
@@ -14,15 +14,16 @@ Reviewed September 20, 2026. A saved implementation is not an end-to-end accepta
   work, **not blockers for a Free public release**. No money should be collected.
 - Emerald is the default theme; an existing explicit saved theme is respected.
 - Recovery must use an independently verified recovery email, not an app inbox
-  accessible only after login. Current Auth V2 compatibility/security decision is
-  pending; no unsupported reset/deletion endpoint has been exposed.
-- Production target discovered through the CLI: `dapper-gecko-926`. No production
-  write is authorized by discovery alone; confirm the exact write before execution.
+  accessible only after login. Original Convex Auth is now active; recovery and
+  deletion lifecycle work remains separate and is not falsely exposed as complete.
+- Production deployment `dapper-gecko-926` and the replacement ChatGPT Site are
+  live. Production `APP_URL` is verified as
+  `https://life-maxim.newrealmlevel.chatgpt.site`.
 
 ## Priority before the hackathon deadline
 
-1. Finish the latest development deploy, tests and build; verify the new emerald
-   theme and guidance dialogs in an authenticated browser.
+1. Run authenticated production browser acceptance for original Auth, the emerald
+   theme, profile/entry creation and the principal dashboard journeys.
 2. Prove actual Interactive Mode / Discuss with AI voice connection and shutdown.
    A successful model lookup alone is insufficient. Test text, MP3 and infographic
    transformations, downloads, persistence and deletion.
@@ -33,16 +34,12 @@ Reviewed September 20, 2026. A saved implementation is not an end-to-end accepta
 4. Run the principal user journeys: signup, profile suggestions/confirmation,
    retained drafts, guidance, research, plan acceptance, export, sign-out and
    cross-account isolation. Check phone layout, keyboard focus and contrast.
-5. Publish a stable public chatgpt.site frontend with the approved Convex backend
-   and correctly configured auth origins/secrets. Production changes require
-   explicit approval; a local build is not publication.
-6. Confirm repository visibility, scan for secrets/private files, update README and
-   hackathon.md, record a video under three minutes, share the build on social media,
-   and submit the repository/live URL/video on vibeapps.dev. No submission has been made.
+5. Record a video under three minutes, make the required social post, and submit the
+   public repository, live URL and video on vibeapps.dev. No submission has been made.
 
 ## Further work for a complete public product
 
-- Account recovery and the Convex Auth V2 alpha upgrade/rollback review.
+- Independently verified recovery email and reset flow for original Convex Auth.
 - Account deletion, file/record retention and reliable operational cleanup.
 - Email delivery/bounce/suppression reconciliation, client editing/reactivation,
   queue pagination, provider inbox capacity and operator recovery.

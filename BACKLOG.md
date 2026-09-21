@@ -12,17 +12,17 @@ Status: done / in progress / todo / blocked. Completion requires evidence, not j
   reservation reject direct calls, even if a caller bypasses the UI.
 - [x] Release-gate regression plus retained post-hackathon billing tests: 70 tests
   across 14 files pass. Clean TypeScript and changed-source lint pass.
-- [ ] Verified-email recovery, account deletion/session revocation: chosen recovery
-  channel confirmed; installed Auth V2 API lacks complete revocation/deletion.
-  Current official docs still warn against production use. Authentication direction
-  owner authorized evaluation of a supported alternative. Better Auth recommended
-  in docs/auth-migration-evaluation.md; actual migration is not yet approved.
+- [ ] Verified-email recovery, account deletion/session revocation: original Convex
+  Auth now provides username/password sessions, but the verified recovery-email UI,
+  reset flow, deletion cleanup and revocation rehearsal remain launch hardening.
 - [x] Development push and full frontend build passed. Secure Node system-CA/IPv4
   connection succeeded; earlier deployment network blocker is cleared for this run.
 - [x] One bounded GPT Live 1 backend probe started, received audio and transcript,
   and closed without error. Browser microphone/playback acceptance remains open.
 - [ ] User-controlled retention, email reconciliation and related live acceptance.
-- [ ] Convex production `dapper-gecko-926` identified, but not yet changed/published.
+- [x] Convex production `dapper-gecko-926` deployed separately from development.
+  The public Site is live at `https://life-maxim.newrealmlevel.chatgpt.site`, and
+  production `APP_URL` was verified against that canonical URL on September 21.
 
 Paystack activation and billing hardening are **not Free-launch blockers**; preserve
 them for after the hackathon. Do not charge users or make paid tiers selectable.
@@ -175,18 +175,19 @@ alternate tab cannot recover from its connection-error page. Authenticated brows
 acceptance still requires a signed-in development test session.
 See `docs/product-controls.md` for behavior and remaining acceptance steps.
 
-## 6. Launch and hackathon — todo
+## 6. Launch and hackathon — in progress
 
 - [ ] Expanded automated and end-to-end security tests; cost/abuse controls.
   - [x] Automated AI ownership, selected-profile context, request idempotency,
     timeout/late-result handling, output bounds, per-minute quota and archived-profile checks.
     Full suite: 11 tests passed on 2026-09-12. Live abuse and browser tests remain open.
-- [ ] Auth V2 alpha upgrade/rollback and account-recovery review.
-  - [x] Installed-vs-current-docs compatibility review recorded in `docs/auth-v2-readiness.md`.
-  - [ ] Resolve upstream production-alpha warning; select a verified recovery channel and rehearse a pinned upgrade/restore. No auth dependency changed.
-- [ ] Production Convex setup with explicit deployment approval.
-- [ ] ChatGPT Sites registration, production build, publication and live verification.
-- [ ] Demo walkthrough, submission materials and evidence-based hackathon log.
+- [x] Replaced active Auth V2 with original Convex Auth and preserved controlled
+  legacy-account migration; 76 tests and bounded development auth probes pass.
+- [x] Production Convex setup and deployment completed with explicit approval.
+- [x] ChatGPT Sites registration, production build and publication completed. The
+  public homepage returns HTTP 200 and identifies Life Maxim.
+- [ ] Complete authenticated production browser acceptance and the final demo video,
+  social post and submission form. The public repo and evidence log are ready.
 
 ## Interactive Mode — implemented pilot; acceptance in progress
 
