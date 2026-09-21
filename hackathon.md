@@ -3,7 +3,7 @@
 - **Project:** Life Maxim
 - **Event:** Convex All Gas Hackathon
 - **What it does:** An AI life-management environment that helps people understand their lives, make decisions, remember what matters, plan objectives, and carry out authorized actions.
-- **Live app:** not deployed
+- **Live app:** https://life-maxim.newrealmlevel.chatgpt.site
 - **Repo:** https://github.com/PetersonnOne/Life-Maxim-Hackathon-v1
 - **Frontend:** Codex Sites
 - **Convex deployment:** https://dapper-gecko-926.convex.cloud (production)
@@ -12,7 +12,7 @@
 - **Auth:** Convex Auth
 - **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; backend audio probe passed, browser acceptance pending); gpt-4o-mini-tts and gpt-image-2 (implemented, media acceptance pending)
 - **Started:** 2026-09-10T02:42:52Z
-- **Last updated:** 2026-09-21T14:55:53Z
+- **Last updated:** 2026-09-21T16:42:04Z
 
 ## Log
 
@@ -89,3 +89,5 @@ Recovered the interrupted validation and development deployment. All 76 automate
 Registered the Life Maxim Codex Sites project and persisted its hosted identity in `.openai/hosting.json`. Prepared the separate Convex production environment with backend-only provider configuration and independent authentication signing keys; secret values and user data remain outside source control. This records release preparation, not a claim that a public Sites version is live.
 
 Deployed the validated schema, indexes, functions, HTTP routes, scheduled jobs and registered components to the separate Convex production deployment. Production began without copying development users or application records.
+
+Moved the frontend deployment to the owner's current ChatGPT Sites account while preserving the same validated application source and Convex production backend. The replacement public Site reached version 1 and its canonical live URL was confirmed by the hosting platform; the browser bundle contains the exact production Convex URL and excludes the development deployment URL (`.openai/hosting.json`).
