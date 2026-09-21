@@ -1,7 +1,9 @@
 import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import schema from "./schema";
+import { accountTier } from "./entitlements";
+import { TIERS } from "./tierPolicy";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 
 export const list=query({
@@ -24,7 +26,7 @@ export const create=mutation({
     const existing=await ctx.db.query("profiles").withIndex("by_ownerId_and_normalizedName",q=>q.eq("ownerId",ownerId).eq("normalizedName",normalizedName)).unique();
     if(existing){if(existing.archived)throw new ConvexError("Restore the archived profile with this name first.");return existing._id;}
     const profiles=await ctx.db.query("profiles").withIndex("by_ownerId_and_archived",q=>q.eq("ownerId",ownerId).eq("archived",false)).take(100);
-    if(profiles.length>=100)throw new ConvexError("You have reached the profile limit.");
+    if(profiles.length>=TIERS[await accountTier(ctx,ownerId)].profiles)throw new ConvexError("You have reached the profile limit.");
     const profileId=await ctx.db.insert("profiles",{...args,name,normalizedName,ownerId,archived:false,updatedAt:Date.now()});
     await ctx.db.insert("activityEvents",{ownerId,profileId,kind:"profile_created",summary:"Created profile: "+name});
     return profileId;
@@ -71,7 +73,7 @@ export const setArchived = mutation({
     if (args.archived && args.confirmation !== profile.name) throw new ConvexError("Type the profile name to confirm archiving.");
     if (!args.archived) {
       const active = await ctx.db.query("profiles").withIndex("by_ownerId_and_archived", q => q.eq("ownerId", ownerId).eq("archived", false)).take(100);
-      if (active.length >= 100) throw new ConvexError("Archive another profile before restoring this one.");
+      if (active.length >= TIERS[await accountTier(ctx,ownerId)].profiles) throw new ConvexError("Archive another profile before restoring this one; your plan's profile limit is reached.");
     }
     await ctx.db.patch("profiles", args.id, { archived: args.archived, updatedAt: Math.max(Date.now(), profile.updatedAt + 1) });
     await ctx.db.insert("activityEvents", { ownerId, profileId: args.id, kind: args.archived ? "profile_archived" : "profile_restored", summary: args.archived ? "Archived profile; existing history retained" : "Restored profile" }); return null;

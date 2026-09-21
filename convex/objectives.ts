@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import schema, {objectiveStatus} from "./schema";
 const doc=schema.tables.objectives.validator.extend({_id:v.id("objectives"),_creationTime:v.number()});
 export const list=query({

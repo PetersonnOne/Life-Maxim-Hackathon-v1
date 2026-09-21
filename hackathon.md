@@ -4,15 +4,15 @@
 - **Event:** Convex All Gas Hackathon
 - **What it does:** An AI life-management environment that helps people understand their lives, make decisions, remember what matters, plan objectives, and carry out authorized actions.
 - **Live app:** not deployed
-- **Repo:** none
+- **Repo:** https://github.com/PetersonnOne/Life-Maxim-Hackathon-v1
 - **Frontend:** Codex Sites
-- **Convex deployment:** https://robust-lemur-250.convex.cloud (development)
-- **Components:** @convex-dev/auth (core, password provider, username), @convex-dev/agent, @convex-dev/rate-limiter
-- **Convex features:** schema, indexes, queries, mutations, actions, scheduled functions, crons, realtime queries, ownership checks
+- **Convex deployment:** https://dapper-gecko-926.convex.cloud (production)
+- **Components:** @convex-dev/auth (core, password provider, username), @convex-dev/agent, @convex-dev/rate-limiter, @convex-dev/workflow
+- **Convex features:** schema, indexes, queries, mutations, actions, scheduled functions, crons, realtime queries, ownership checks, file storage, paginated queries
 - **Auth:** Convex Auth
-- **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; access verified, audio acceptance pending)
+- **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; backend audio probe passed, browser acceptance pending); gpt-4o-mini-tts and gpt-image-2 (implemented, media acceptance pending)
 - **Started:** 2026-09-10T02:42:52Z
-- **Last updated:** 2026-09-13T16:36:12Z
+- **Last updated:** 2026-09-21T14:55:53Z
 
 ## Log
 
@@ -69,3 +69,23 @@ Recovered interrupted checks and fixed late voice-event/cleanup races, hidden-ta
 Preserved manual profile fields and edited AI suggestions across entry-wizard steps, tabs and dialog reopening; added Title Case headings and made Change return to existing profiles (`components/workspace-app.tsx`, `components/ai-intelligence.tsx`). Clarified that profile creation saves immediately, while entry saving does not create another profile. Existing records were left untouched; unsaved drafts still clear on refresh or sign-out.
 
 Replaced raw voice failures with distinct local cooldown, provider quota/access and connection messages (`convex/interactive.ts`, `convex/liveActions.ts`, `components/interactive-mode.tsx`). All 53 automated tests, TypeScript, targeted lint, the full frontend build and development push passed. The latest local dashboard probe timed out, so browser acceptance remains open. No paid voice call was made for these fixes; the reported failures do not establish an exhausted API balance. Paid voice acceptance is deferred pending owner readiness. Evidence is local source and executed checks, not Git history.
+
+### 2026-09-20 - working tree
+Added selected-guidance voice discussions and six saved transformation formats, with owner-scoped file downloads/deletion, genuine Word exports, independent daily media quotas and a two-minute audio duration check (`components/guidance-tools.tsx`, `convex/transformations.ts`, `convex/transformationActions.ts`). Direct OpenAI model identifiers are `gpt-4o-mini-tts` and `gpt-image-2`; actual media generation and voice transport remain unverified. Text preparation uses the existing Luna/Terra routing.
+
+Recovered validation: 69 automated tests and targeted lint pass; the full frontend build passes after resolving the local output-folder lock. Added a persisted emerald dark theme and retained light mode (`components/theme-control.tsx`, `app/emerald-theme.css`). Latest development deployment attempt was blocked by local HTTPS/network failure, so no live probe or publication success is claimed. Browser acceptance remains open. Submission readiness now separates core demo verification from billing, retention and broader production work (`docs/submission-readiness.md`). Existing client-mail and tier implementation is documented in BACKLOG.md; Paystack USD setup remains paused at the owner's request.
+
+Later verification cleared the development push using Node system certificate trust and IPv4-first resolution; the full build, TypeScript, changed-source lint and 70 tests pass. One bounded GPT Live 1 backend probe started, received audio and transcript events, and closed without error. Browser microphone/playback and generated media acceptance remain open.
+
+Made emerald the default and locked the release to Free: signup and Plans display disabled paid tiers, with backend checkout/reservation enforcement (`lib/release-policy.ts`, `components/launch-plans.tsx`, `convex/releasePolicy.test.ts`). Billing activation is not a Free-release blocker. Recorded a Better Auth migration evaluation; authentication replacement, recovery/deletion, retention and production publication remain incomplete. No existing account was migrated.
+
+### 2026-09-21 - working tree
+Moved the application to original Convex Auth username/password sessions while preserving verified legacy-account migration by user ID. Current credentials block fallback to an older password, browser-supplied identity fields are ignored, JWTs are short-lived, and migration tests cover password proof, throttling persistence and cross-account isolation (`convex/auth.ts`, `convex/authMigration.ts`, `convex/authMigration.test.ts`, `convex/http.ts`).
+
+Added the Life Maxim compass-and-growth logo, an Emerald Dark/Light theme selector, and full-page homepage/auth navigation to avoid stale client-router authentication state (`public/life-maxim-logo.png`, `components/brand-mark.tsx`, `components/theme-control.tsx`, `app/page.tsx`, `components/auth-form.tsx`). Paid plans remain visibly disabled for the Free hackathon release.
+
+Recovered the interrupted validation and development deployment. All 76 automated tests, TypeScript and the five-stage frontend build pass. Bounded live development probes verified real password crypto plus disposable signup, authenticated access, wrong-password rejection, sign-in, token refresh, sign-out and cleanup without changing existing users.
+
+Registered the Life Maxim Codex Sites project and persisted its hosted identity in `.openai/hosting.json`. Prepared the separate Convex production environment with backend-only provider configuration and independent authentication signing keys; secret values and user data remain outside source control. This records release preparation, not a claim that a public Sites version is live.
+
+Deployed the validated schema, indexes, functions, HTTP routes, scheduled jobs and registered components to the separate Convex production deployment. Production began without copying development users or application records.

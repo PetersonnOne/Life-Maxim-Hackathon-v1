@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import type { Infer } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { action, internalAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { guidanceSchema, profileSuggestion, suggestionSchema } from "./aiContracts";

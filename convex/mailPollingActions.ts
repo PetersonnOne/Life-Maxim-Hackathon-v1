@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { automaticMail } from "./clientMailRules";
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const message = z.object({ inbox_id: z.string().max(500), message_id: z.string().min(1).max(1000), thread_id: z.string().min(1).max(1000),
-  labels: z.array(z.string()).max(100), from: z.string().max(1000), subject: z.string().optional(), preview: z.string().optional(), text: z.string().optional() });
+  timestamp:z.string().optional(), headers:z.record(z.string()).optional(), extracted_text:z.string().optional(), labels: z.array(z.string()).max(100), from: z.string().max(1000), subject: z.string().optional(), preview: z.string().optional(), text: z.string().optional() });
 const page = z.object({ messages: z.array(message).max(10), next_page_token: z.string().max(10000).nullish() });
 class PollError extends Error {
   constructor(readonly retryAt?: number, readonly resetCursor = false) { super("Mail polling failed"); }
@@ -51,7 +52,7 @@ export const poll = internalAction({ args: { id: v.id("mailInboxes"), generation
       if (full.inbox_id !== inbox.providerId || full.message_id !== item.message_id || full.thread_id !== item.thread_id) throw new PollError();
       if (!incoming(full.labels)) continue;
       await ctx.runMutation(internal.mail.receive, { inboxId: inbox.providerId!, messageId: full.message_id, threadId: full.thread_id,
-        sender: full.from, subject: (full.subject ?? "(No subject)").slice(0, 200), body: (full.text ?? full.preview ?? "No plain-text body available.").slice(0, 10000) });
+        safe:true, automatic:automaticMail(full.headers,full.from), ...(full.timestamp && Number.isFinite(Date.parse(full.timestamp))?{receivedAt:Date.parse(full.timestamp)}:{}), sender: full.from, subject: (full.subject ?? "(No subject)").slice(0, 200), body: (full.extracted_text ?? full.text ?? full.preview ?? "No plain-text body available.").slice(0, 10000) });
     }
     // Checkpoint only a fully processed page. Replays deduplicate by message ID.
     // Rescan after reaching the end: no timestamp cursor that can lose late mail.

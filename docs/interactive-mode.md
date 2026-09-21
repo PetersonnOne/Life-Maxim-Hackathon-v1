@@ -36,6 +36,12 @@ Remaining PRD extension work: combined research-to-report workflow with reviewed
 
 ## Official API references
 
+September 20 recovery: selected-guidance discussion now reuses this voice broker
+without introducing sibling-card or memory context. A bounded operator-only voice
+probe is implemented, but this recovery run could not deploy/run it because local
+HTTPS/network access to Convex failed. No working paid voice call is claimed.
+See `guidance-transformations.md` for the new controls and acceptance checklist.
+
 - [Live WebRTC creation and transport](https://developers.openai.com/api/docs/guides/voice-webrtc?api=live)
 - [Live create schema and frontend event permissions](https://developers.openai.com/api/reference/typescript/resources/live/methods/create)
 - [Client delegation](https://developers.openai.com/api/docs/guides/live-delegation?delegation-mode=client)

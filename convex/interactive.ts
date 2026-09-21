@@ -1,4 +1,4 @@
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { RateLimiter, DAY, MINUTE } from "@convex-dev/rate-limiter";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
@@ -6,6 +6,7 @@ import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
+import { consume } from "./entitlements";
 import { brief, briefSchema, LIVE_SECONDS } from "./liveContracts";
 
 const limits = new RateLimiter(components.rateLimiter, {
@@ -22,8 +23,21 @@ async function owned(ctx: QueryCtx | MutationCtx, id: Id<"interactiveSessions">)
 async function activeContext(ctx: QueryCtx | MutationCtx, id: Id<"interactiveSessions">) {
   const session = await owned(ctx, id); const profile = await ctx.db.get("profiles", session.profileId);
   if (!profile || profile.archived || profile.ownerId !== session.ownerId || profile.updatedAt !== session.profileUpdatedAt) throw new ConvexError("Profile changed. Start a new session and confirm its context.");
+  if (session.guidanceId) { const guidance = await ctx.db.get("aiGuidance", session.guidanceId); if (!guidance?.result || guidance.status !== "ready" || guidance.ownerId !== session.ownerId || guidance.profileId !== profile._id || guidance.objectiveId !== session.objectiveId) throw new ConvexError("Selected guidance is unavailable."); }
   return { session, profile };
 }
+export const discussGuidance = mutation({ args: { guidanceId: v.id("aiGuidance") }, returns: v.id("interactiveSessions"), handler: async (ctx, { guidanceId }) => {
+  const ownerId = await getAuthUserId(ctx);
+  const guidance = await ctx.db.get("aiGuidance", guidanceId);
+  if (!ownerId || guidance?.ownerId !== ownerId || guidance.status !== "ready" || !guidance.result) throw new ConvexError("Completed guidance not found.");
+  const profile = await ctx.db.get("profiles", guidance.profileId);
+  const objective = await ctx.db.get("objectives", guidance.objectiveId);
+  if (!profile || profile.archived || profile.ownerId !== ownerId || objective?.ownerId !== ownerId || objective.profileId !== profile._id) throw new ConvexError("Choose an active profile.");
+  const existing = await ctx.db.query("interactiveSessions").withIndex("by_ownerId_and_guidanceId", q => q.eq("ownerId", ownerId).eq("guidanceId", guidanceId)).order("desc").first();
+  if (existing?.profileUpdatedAt === profile.updatedAt) return existing._id;
+  await limits.limit(ctx, "sessionCreates", { key: ownerId, throws: true });
+  return await ctx.db.insert("interactiveSessions", { ownerId, profileId: profile._id, profileUpdatedAt: profile.updatedAt, objectiveId: guidance.objectiveId, guidanceId, updatedAt: Date.now() });
+} });
 export const create = mutation({
   args: { profileId: v.id("profiles"), expectedUpdatedAt: v.number(), objectiveId: v.optional(v.id("objectives")) }, returns: v.id("interactiveSessions"),
   handler: async (ctx, args) => {
@@ -42,6 +56,10 @@ export const get = query({ args: { id: v.id("interactiveSessions") }, returns: s
 async function ownedWrapper(ctx: QueryCtx, { id }: { id: Id<"interactiveSessions"> }) { return await owned(ctx, id); }
 export const context = internalQuery({ args: { id: v.id("interactiveSessions") }, returns: v.string(), handler: async (ctx, { id }) => {
   const { session, profile } = await activeContext(ctx, id);
+  if (session.guidanceId) {
+    const guidance = await ctx.db.get("aiGuidance", session.guidanceId);
+    return JSON.stringify({ mode: "guidanceDiscussion", profile: { name: profile.name, role: profile.role, industry: profile.industry }, question: guidance!.question, selectedGuidance: guidance!.result, note: "Discuss only this selected guidance. It is AI-generated advice, not verified fact. No other cards or profile history are included." });
+  }
   const memories = await ctx.db.query("memories").withIndex("by_profileId", q => q.eq("profileId", profile._id)).order("desc").take(8);
   const objective = session.objectiveId ? await ctx.db.get("objectives", session.objectiveId) : null;
   const guidance = objective ? await ctx.db.query("aiGuidance").withIndex("by_objectiveId", q => q.eq("objectiveId", objective._id)).order("desc").take(2) : [];
@@ -65,6 +83,7 @@ export const reserve = internalMutation({ args: { sessionId: v.id("interactiveSe
     const result = await limits.limit(ctx, name, name === "liveGlobal" ? {} : { key: session.ownerId });
     if (!result.ok) throw new ConvexError(`Life Maxim voice ${name === "liveMinute" ? "cooldown" : "daily allowance"} reached. Wait at least ${Math.ceil(result.retryAfter / 1000)} seconds before trying again. No OpenAI request was made.`);
   }
+  await consume(ctx,session.ownerId,"voice");
   const expiresAt = Date.now() + LIVE_SECONDS * 1000;
   const id = await ctx.db.insert("voiceConnections", { ...args, ownerId: session.ownerId, status: "starting", expiresAt, updatedAt: Date.now() });
   await ctx.scheduler.runAt(expiresAt, internal.liveActions.hangup, { id, attempt: 0 });
@@ -106,6 +125,7 @@ export const voiceState = query({ args: { sessionId: v.id("interactiveSessions")
 } });
 export const confirm = mutation({ args: { id: v.id("interactiveSessions"), brief }, returns: v.id("objectives"), handler: async (ctx, args): Promise<Id<"objectives">> => {
   const { session } = await activeContext(ctx, args.id); const checked = briefSchema.safeParse(args.brief);
+  if (session.guidanceId) throw new ConvexError("This discussion is grounded in an existing guidance card. Start a separate Interactive Mode session to create a new brief.");
   if (!checked.success) throw new ConvexError("Check the brief length and title.");
   if (session.brief && session.objectiveId) { if ((["title", "goal", "context", "questions"] as const).some(key => session.brief![key] !== checked.data[key])) throw new ConvexError("This brief was already confirmed. Start a new discussion to change it."); return session.objectiveId; }
   const objectiveId = session.objectiveId ?? await ctx.runMutation(api.objectives.create, { profileId: session.profileId, title: checked.data.title, description: checked.data.context, desiredOutcome: checked.data.goal, requestId: `interactive-${session._id}` });

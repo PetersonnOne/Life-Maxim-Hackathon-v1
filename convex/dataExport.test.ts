@@ -16,12 +16,15 @@ test("export is authenticated and excludes all foreign-owner records across its 
       const profileId = await ctx.db.insert("profiles", { ownerId: id, name: "Archived", normalizedName: "archived", description: "", role: "", industry: "", archived: true, updatedAt: 1 });
       const objectiveId = await ctx.db.insert("objectives", { ownerId: id, profileId, title: "Entry", description: "", desiredOutcome: "", status: "active", requestId: "export", updatedAt: 1 });
       const base = { ownerId: id, profileId, objectiveId };
+      await ctx.db.insert("clients", { ownerId: id, profileId, name: "Client", email: "client@example.com", clientCode: "LM-TEST", active: true, updatedAt: 1 });
+      await ctx.db.insert("billingAccounts", { ownerId: id, tier: "free", expiresAt: 0, generation: 0, nextCheckAt: 1, status: "pending", environment: "test" });
       const sessionId = await ctx.db.insert("interactiveSessions", { ...base, profileUpdatedAt: 1, updatedAt: 1 });
       await ctx.db.insert("voiceConnections", { ownerId: id, sessionId, requestId: "export", status: "closed", expiresAt: 1, updatedAt: 1 });
       await ctx.db.insert("memories", { ownerId: id, profileId, content: "Private context", kind: "context", pinned: false, updatedAt: 1 });
       await ctx.db.insert("tasks", { ...base, title: "Task", done: false, dependsOn: [], updatedAt: 1 });
       await ctx.db.insert("activityEvents", { ...base, kind: "test", summary: "Activity" });
-      await ctx.db.insert("aiGuidance", { ...base, requestId: "export", status: "failed", question: "Question", threadId: "thread", model: "test", memoryIds: [], updatedAt: 1 });
+      const guidanceId = await ctx.db.insert("aiGuidance", { ...base, requestId: "export", status: "failed", question: "Question", threadId: "thread", model: "test", memoryIds: [], updatedAt: 1 });
+      await ctx.db.insert("guidanceTransformations", { ownerId: id, profileId, guidanceId, kind: "article", custom: "", requestId: "export", status: "failed", updatedAt: 1 });
       const runId = await ctx.db.insert("researchRuns", { ...base, requestId: "export", status: "ready", query: "Query", country: "GB", updatedAt: 1 });
       await ctx.db.insert("evidence", { ownerId: id, objectiveId, runId, url: "https://example.com", title: "Source", excerpt: "Text", retrievedAt: 1 });
       await ctx.db.insert("planProposals", { ...base, requestId: "export", status: "pending", scenario: "Scenario", threadId: "thread", model: "test", updatedAt: 1 });

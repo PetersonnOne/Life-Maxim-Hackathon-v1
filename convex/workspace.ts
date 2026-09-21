@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import schema from "./schema";
 export const activity=query({
   args:{profileId:v.optional(v.id("profiles")),objectiveId:v.optional(v.id("objectives"))},

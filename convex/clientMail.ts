@@ -1,0 +1,49 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { ConvexError,v } from "convex/values";
+import { RateLimiter,DAY } from "@convex-dev/rate-limiter";
+import { mutation,query,internalMutation,internalQuery } from "./_generated/server";
+import type { MutationCtx,QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { internal,components } from "./_generated/api";
+import schema from "./schema";
+import { accountTier,consume } from "./entitlements";
+import { TIERS } from "./tierPolicy";
+import { clientCode,senderAddress } from "./clientMailRules";
+import { mailWorkflow } from "./mailWorkflow";
+const limits=new RateLimiter(components.rateLimiter,{ackClient:{kind:"fixed window",rate:1,period:DAY},ackGlobal:{kind:"fixed window",rate:1000,period:DAY},triageGlobal:{kind:"fixed window",rate:2000,period:DAY}});
+async function profileOwned(ctx:MutationCtx|QueryCtx,id:Id<"profiles">){const ownerId=await getAuthUserId(ctx);const p=await ctx.db.get("profiles",id);if(!ownerId||p?.ownerId!==ownerId||p.archived)throw new ConvexError("Choose an active profile.");return p;}
+export const register=mutation({args:{profileId:v.id("profiles"),name:v.string(),email:v.string()},returns:v.id("clients"),handler:async(ctx,args)=>{
+ const p=await profileOwned(ctx,args.profileId);const email=senderAddress(args.email);if(!email||email!==args.email.trim().toLowerCase()||email.length>254||!args.name.trim()||args.name.length>120)throw new ConvexError("Enter a client name and a single valid email address.");
+ const existing=await ctx.db.query("clients").withIndex("by_profileId_and_email",q=>q.eq("profileId",p._id).eq("email",email)).unique();if(existing)throw new ConvexError("This client email is already registered in the profile.");
+ const cap=TIERS[await accountTier(ctx,p.ownerId)].clients;const rows=await ctx.db.query("clients").withIndex("by_ownerId_and_active",q=>q.eq("ownerId",p.ownerId).eq("active",true)).take(cap);if(rows.length>=cap)throw new ConvexError("Your plan's active-client limit is reached.");
+ const id=await ctx.db.insert("clients",{ownerId:p.ownerId,profileId:p._id,name:args.name.trim(),email,clientCode:"pending",active:true,updatedAt:Date.now()});await ctx.db.patch("clients",id,{clientCode:`LM-${id.toUpperCase()}`});return id;
+}});
+export const deactivate=mutation({args:{id:v.id("clients")},returns:v.null(),handler:async(ctx,{id})=>{const c=await ctx.db.get("clients",id);if(!c)throw new ConvexError("Client not found.");await profileOwned(ctx,c.profileId);await ctx.db.patch("clients",id,{active:false,updatedAt:Date.now()});return null;}});
+export const list=query({args:{profileId:v.id("profiles")},returns:v.object({clients:v.array(schema.doc("clients")),messages:v.array(schema.doc("mailMessages")),inbox:v.union(v.null(),schema.doc("mailInboxes"))}),handler:async(ctx,{profileId})=>{await profileOwned(ctx,profileId);return {clients:await ctx.db.query("clients").withIndex("by_profileId",q=>q.eq("profileId",profileId)).take(500),messages:await ctx.db.query("mailMessages").withIndex("by_profileId",q=>q.eq("profileId",profileId)).order("desc").take(50),inbox:await ctx.db.query("mailInboxes").withIndex("by_profileId",q=>q.eq("profileId",profileId)).unique()};}});
+export const configure=mutation({args:{profileId:v.id("profiles"),enabled:v.boolean(),acknowledge:v.boolean()},returns:v.null(),handler:async(ctx,args)=>{await profileOwned(ctx,args.profileId);const inbox=await ctx.db.query("mailInboxes").withIndex("by_profileId",q=>q.eq("profileId",args.profileId)).unique();if(inbox?.status!=="ready")throw new ConvexError("Create an inbox first.");await ctx.db.patch("mailInboxes",inbox._id,{handlerEnabled:args.enabled,acknowledge:args.enabled&&args.acknowledge,...(!inbox.handlerEnabled&&args.enabled?{handlerEnabledAt:Date.now()}: {})});return null;}});
+// Called in the same transaction as message insertion: no duplicate workflow on re-poll.
+export async function route(ctx:MutationCtx,id:Id<"mailMessages">,safe:boolean,automatic:boolean,receivedAt?:number){
+ const m=await ctx.db.get("mailMessages",id);if(!m)return;
+ const inbox=await ctx.db.query("mailInboxes").withIndex("by_profileId",q=>q.eq("profileId",m.profileId)).unique();if(!inbox?.handlerEnabled)return;
+ const code=clientCode(m.subject,m.body);const c=code?await ctx.db.query("clients").withIndex("by_profileId_and_clientCode",q=>q.eq("profileId",m.profileId).eq("clientCode",code)).unique():null;
+ const eligible=safe&&!automatic&&receivedAt!==undefined&&receivedAt>=(inbox.handlerEnabledAt??Infinity)&&c?.active&&c.ownerId===m.ownerId&&c.email===senderAddress(m.sender);
+ if(!eligible){await ctx.db.patch("mailMessages",id,{handlerStatus:"quarantined",handlerReason:"Client ID, sender, authentication, timestamp or automatic-mail checks did not pass.",ackStatus:"skipped"});return;}
+ await ctx.db.patch("mailMessages",id,{clientId:c._id,handlerStatus:"pending",triageStatus:"pending",ackStatus:inbox.acknowledge?"pending":"skipped"});
+ const workflowId=await mailWorkflow.start(ctx,internal.mailWorkflow.process,{id},{startAsync:true});await ctx.db.patch("mailMessages",id,{workflowId});
+}
+async function valid(ctx:MutationCtx|QueryCtx,id:Id<"mailMessages">){const m=await ctx.db.get("mailMessages",id);if(!m?.clientId||m.handlerStatus==="quarantined")return null;const c=await ctx.db.get("clients",m.clientId);const p=await ctx.db.get("profiles",m.profileId);const inbox=await ctx.db.query("mailInboxes").withIndex("by_profileId",q=>q.eq("profileId",m.profileId)).unique();if(!c?.active||c.ownerId!==m.ownerId||c.profileId!==m.profileId||c.email!==senderAddress(m.sender)||p?.ownerId!==m.ownerId||p.archived||!inbox?.handlerEnabled||!inbox.providerId||inbox.status!=="ready"||inbox.ownerId!==m.ownerId)return null;return {message:m,client:c,inbox};}
+const contextValidator=v.union(v.null(),v.object({message:schema.doc("mailMessages"),client:schema.doc("clients"),inbox:schema.doc("mailInboxes")}));
+export const context=internalQuery({args:{id:v.id("mailMessages")},returns:contextValidator,handler:(ctx,{id})=>valid(ctx,id)});
+export const triagePermit=internalMutation({args:{id:v.id("mailMessages")},returns:v.boolean(),handler:async(ctx,{id})=>{const data=await valid(ctx,id);if(!data||data.message.triageStatus!=="pending")return false;await consume(ctx,data.message.ownerId,"triage");await limits.limit(ctx,"triageGlobal",{throws:true});return true;}});
+export const triageDone=internalMutation({args:{id:v.id("mailMessages"),summary:v.optional(v.string()),urgency:v.optional(v.string()),suggestedReply:v.optional(v.string())},returns:v.null(),handler:async(ctx,{id,...fields})=>{const m=await ctx.db.get("mailMessages",id);if(m?.triageStatus==="pending")await ctx.db.patch("mailMessages",id,{...fields,triageStatus:fields.summary?"ready":"failed"});return null;}});
+export const claimAck=internalMutation({args:{id:v.id("mailMessages")},returns:contextValidator,handler:async(ctx,{id})=>{const data=await valid(ctx,id);if(!data||data.message.ackStatus!=="pending")return null;if(!data.inbox.acknowledge){await ctx.db.patch("mailMessages",id,{ackStatus:"skipped"});return null;}const permit=await limits.limit(ctx,"ackClient",{key:data.client._id});if(!permit.ok){await ctx.db.patch("mailMessages",id,{ackStatus:"skipped"});return null;}await consume(ctx,data.message.ownerId,"mail");await limits.limit(ctx,"ackGlobal",{throws:true});await ctx.db.patch("mailMessages",id,{ackStatus:"uncertain"});return data;}});
+export const ackDone=internalMutation({args:{id:v.id("mailMessages"),providerId:v.string()},returns:v.null(),handler:async(ctx,{id,providerId})=>{const m=await ctx.db.get("mailMessages",id);if(m?.ackStatus==="uncertain")await ctx.db.patch("mailMessages",id,{ackStatus:"sent",ackProviderId:providerId});return null;}});
+export const failed=internalMutation({args:{id:v.id("mailMessages")},returns:v.null(),handler:async(ctx,{id})=>{const m=await ctx.db.get("mailMessages",id);if(m)await ctx.db.patch("mailMessages",id,{...(m.triageStatus==="pending"?{triageStatus:"failed" as const}:{}),...(m.ackStatus==="pending"?{ackStatus:"skipped" as const}:{})});return null;}});
+export const mark=mutation({args:{id:v.id("mailMessages"),status:v.union(v.literal("pending"),v.literal("in_progress"),v.literal("resolved"))},returns:v.null(),handler:async(ctx,{id,status})=>{const m=await ctx.db.get("mailMessages",id);if(!m)throw new ConvexError("Message not found.");await profileOwned(ctx,m.profileId);if(!m.clientId||m.handlerStatus==="quarantined")throw new ConvexError("Unmatched mail cannot be marked as trusted.");await ctx.db.patch("mailMessages",id,{handlerStatus:status});return null;}});
+export const prepareReply=mutation({args:{id:v.id("mailMessages")},returns:v.id("objectives"),handler:async(ctx,{id}):Promise<Id<"objectives">>=>{const data=await valid(ctx,id);if(!data)throw new ConvexError("Active matched client mail required.");await profileOwned(ctx,data.message.profileId);
+ const m=data.message;const objectiveId=m.objectiveId??await ctx.db.insert("objectives",{ownerId:m.ownerId,profileId:m.profileId,title:m.subject.slice(0,160)||"Client request",description:m.body,desiredOutcome:"Review and respond to the client request",status:"active",requestId:`mail-${id}`,updatedAt:Date.now()});
+ const drafts=await ctx.db.query("mailDrafts").withIndex("by_objectiveId",q=>q.eq("objectiveId",objectiveId)).take(20);
+ if(drafts.some(d=>d.replyToMessageId===id))return objectiveId;
+ if(drafts.length>=20)throw new ConvexError("This entry has reached its draft limit.");
+ await ctx.db.insert("mailDrafts",{ownerId:m.ownerId,profileId:m.profileId,objectiveId,replyToMessageId:id,to:data.client.email,subject:`Re: ${m.subject}`.slice(0,200),body:m.suggestedReply??"",version:1,status:"draft",updatedAt:Date.now()});await ctx.db.patch("mailMessages",id,{objectiveId,handlerStatus:"in_progress"});return objectiveId;
+}});

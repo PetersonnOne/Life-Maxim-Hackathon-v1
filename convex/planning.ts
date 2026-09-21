@@ -1,5 +1,5 @@
 import { v, ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { createThread } from "@convex-dev/agent";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { components, internal } from "./_generated/api";
@@ -24,7 +24,7 @@ export const request = mutation({
     const latest = await ctx.db.query("planProposals").withIndex("by_objectiveId", q => q.eq("objectiveId", args.objectiveId)).order("desc").first();
     if (latest?.status === "pending") throw new ConvexError("A proposal is already being prepared.");
     // Shared quotas apply across suggestions, guidance and planning, not once per feature.
-    await ctx.runMutation(internal.intelligence.consumeSuggestionQuota, {});
+    await ctx.runMutation(internal.intelligence.consumeSuggestionQuota, { meter: "heavyAI" });
     const threadId = await createThread(ctx, components.agent, { userId: ownerId });
     const id = await ctx.db.insert("planProposals", { ...args, ownerId, profileId: objective.profileId, model: modelForTask("planning"), threadId, status: "pending", updatedAt: Date.now() });
     await ctx.scheduler.runAfter(0, internal.planningActions.generate, { id });

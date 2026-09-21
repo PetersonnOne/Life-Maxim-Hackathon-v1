@@ -30,9 +30,16 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
+  readonly AGENTMAIL_API_KEY: string | undefined;
+  readonly AGENTMAIL_INBOX_CAPACITY: string | undefined;
+  readonly APP_URL: string | undefined;
   readonly AUTH_JWKS: string;
   readonly AUTH_PRIVATE_KEY: string;
   readonly OPENAI_API_KEY: string | undefined;
+  readonly PAYSTACK_ENVIRONMENT: string | undefined;
+  readonly PAYSTACK_PREMIUM_PLAN_CODE: string | undefined;
+  readonly PAYSTACK_PREMIUM_PLUS_PLAN_CODE: string | undefined;
+  readonly PAYSTACK_SECRET_KEY: string | undefined;
 };
 
 /**

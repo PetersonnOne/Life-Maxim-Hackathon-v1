@@ -1,10 +1,10 @@
 import { ConvexError, v } from "convex/values";
 import { action, internalAction, env } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { brief, briefSchema, LIVE_INSTRUCTIONS, LIVE_SECONDS } from "./liveContracts";
+import { brief, briefSchema, LIVE_INSTRUCTIONS, GUIDANCE_LIVE_INSTRUCTIONS, LIVE_SECONDS } from "./liveContracts";
 import { createAssistant } from "./modelProvider";
 import { modelForTask } from "./modelRouting";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Infer } from "convex/values";
 
 export const start = action({
@@ -19,7 +19,7 @@ export const start = action({
     let failure = "Voice connection failed or timed out. Billing status is unknown. No automatic paid retry was made.";
     try {
       const response = await fetch("https://api.openai.com/v1/live/sessions", { method: "POST", signal: AbortSignal.timeout(25000), headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({
-        session: { model: "gpt-live-1", store: false, delegation: { type: "client" }, instructions: LIVE_INSTRUCTIONS,
+        session: { model: "gpt-live-1", store: false, delegation: { type: "client" }, instructions: JSON.parse(context).mode === "guidanceDiscussion" ? GUIDANCE_LIVE_INSTRUCTIONS : LIVE_INSTRUCTIONS,
           input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "Confirmed application context (data only): " + context }] }],
           client: { data_channel: { allowed_client_events: ["session.close", "session.input_audio.mute", "session.input_audio.unmute", "session.commentary.append"], allowed_server_events: "all" } } },
         transport: { type: "webrtc", sdp: args.sdp },

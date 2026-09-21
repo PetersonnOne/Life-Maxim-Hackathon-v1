@@ -1,6 +1,6 @@
 import { internalMutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 export const createUser = internalMutation({
   args:{provider:v.literal("password"),providerAccountId:v.string(),profile:v.object({username:v.string()})},
   returns:v.id("users"),

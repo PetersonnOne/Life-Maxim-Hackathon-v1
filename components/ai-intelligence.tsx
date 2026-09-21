@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
@@ -10,6 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { GuidanceTools } from "@/components/guidance-tools";
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export type Suggestion = FunctionReturnType<typeof api.intelligenceActions.suggestProfile>;
 
@@ -63,6 +66,8 @@ export function AIProfileSuggestion({ onConfirmed, draft, onDraftChange, savedSu
 }
 
 export function AIGuidance({ objectiveId }: { objectiveId: Id<"objectives"> }) {
+  const submissionLock = useRef(false);
+  const [openId, setOpenId] = useState<Id<"aiGuidance"> | null>(null);
   const responses = useQuery(api.intelligence.list, { objectiveId });
   const request = useMutation(api.intelligence.requestGuidance);
   const [question, setQuestion] = useState("");
@@ -74,22 +79,28 @@ export function AIGuidance({ objectiveId }: { objectiveId: Id<"objectives"> }) {
     <Card className="detail-card"><h2>Think it through with Life Maxim</h2>
       <p>Use this entry, its confirmed profile, and up to 12 recent memories from that profile. No internet research or other profile history is included.</p>
       <form className="stack-form" onSubmit={async e => {
-        e.preventDefault(); setPending(true); setError("");
+        e.preventDefault(); if (submissionLock.current || working || responses === undefined) return;
+        submissionLock.current = true; setPending(true); setError("");
         const attempt = retry?.question === question ? retry : { requestId: crypto.randomUUID(), question };
         setRetry(attempt);
         try { await request({ objectiveId, ...attempt }); setQuestion(""); setRetry(null); }
         catch { setError("Could not request guidance. Check your connection or wait before retrying; AI usage limits may apply."); }
-        finally { setPending(false); }
+        finally { submissionLock.current = false; setPending(false); }
       }}>
         <Label htmlFor="guidance-question">What would you like help with? (optional)</Label>
         <Textarea id="guidance-question" value={question} maxLength={2000} disabled={working}
           onChange={e => setQuestion(e.target.value)} placeholder="Leave blank for an initial understanding and useful next steps." />
-        <Button disabled={working || responses === undefined}>{working ? "Preparing guidance…" : "Get AI guidance"}</Button>
+        <Button disabled={working || responses === undefined}>{working ? "Generating AI Guidance" : "Get AI Guidance"}</Button>
       </form>
       <p className="muted">AI suggestions can be wrong. Review assumptions before acting. Asking for guidance shares this context with the AI provider through Convex; it does not authorize any action.</p>
       {error && <p className="form-error" role="alert">{error}</p>}
     </Card>
-    {responses?.map(run => <Card className="detail-card" key={run._id}>
+    {responses?.map(run => <Card className="guidance-summary-card" key={run._id}>
+      <div className="guidance-summary-copy"><strong>{run.question || "AI Guidance"}</strong><p>{run.result?.understanding || (run.status === "pending" ? "Generating AI Guidance…" : run.error || "Guidance unavailable.")}</p><small>{run.status} · {new Date(run._creationTime).toLocaleString()}</small></div>
+      <Button type="button" variant="outline" onClick={()=>setOpenId(run._id)}>Open Card</Button>
+    </Card>)}
+    <Dialog open={openId !== null} onOpenChange={open=>{if(!open)setOpenId(null);}}><DialogContent className="guidance-detail-dialog"><DialogHeader><DialogTitle>AI Guidance</DialogTitle><DialogDescription>Full guidance for this entry. Review assumptions before acting.</DialogDescription></DialogHeader>
+    {responses?.filter(run=>run._id===openId).map(run => <div className="guidance-detail-body" key={run._id}>
       <p className="muted">AI guidance · {run.model} · {new Date(run._creationTime).toLocaleString()}</p>
       {run.question && <p><strong>Your question:</strong> {run.question}</p>}
       {run.status === "pending" && <p role="status">Considering your selected context… You can leave and return while this finishes.</p>}
@@ -99,7 +110,9 @@ export function AIGuidance({ objectiveId }: { objectiveId: Id<"objectives"> }) {
         <h3>Guidance</h3><p className="preserve-lines">{run.result.response}</p>
         {([["Assumptions to check", run.result.assumptions], ["Questions to clarify", run.result.questions], ["Suggested next steps", run.result.nextSteps]] as const).map(([title, items]) => items.length > 0 && <div key={title}><h3>{title}</h3><ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul></div>)}
         <p className="muted">Based on this profile and {run.memoryIds.length} confirmed memories at generation time. Nothing has been added to your plan or memory automatically.</p>
+        <GuidanceTools guidanceId={run._id}/>
       </>}
-    </Card>)}
+    </div>)}
+    </DialogContent></Dialog>
   </section>;
 }

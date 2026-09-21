@@ -2,6 +2,63 @@
 
 Status: done / in progress / todo / blocked. Completion requires evidence, not just code.
 
+## Free public release decision — September 20
+
+- [x] ChatGPT Sites confirmed as host. Owner confirms public GitHub repository,
+  initial push and root hackathon.md already online.
+- [x] Emerald is now the default theme; saved user preferences remain respected.
+- [x] Signup and Plans show all three tiers. Free is selected; Premium and Premium
+  Plus are disabled with “Disabled until after Hackathon”. Backend checkout and
+  reservation reject direct calls, even if a caller bypasses the UI.
+- [x] Release-gate regression plus retained post-hackathon billing tests: 70 tests
+  across 14 files pass. Clean TypeScript and changed-source lint pass.
+- [ ] Verified-email recovery, account deletion/session revocation: chosen recovery
+  channel confirmed; installed Auth V2 API lacks complete revocation/deletion.
+  Current official docs still warn against production use. Authentication direction
+  owner authorized evaluation of a supported alternative. Better Auth recommended
+  in docs/auth-migration-evaluation.md; actual migration is not yet approved.
+- [x] Development push and full frontend build passed. Secure Node system-CA/IPv4
+  connection succeeded; earlier deployment network blocker is cleared for this run.
+- [x] One bounded GPT Live 1 backend probe started, received audio and transcript,
+  and closed without error. Browser microphone/playback acceptance remains open.
+- [ ] User-controlled retention, email reconciliation and related live acceptance.
+- [ ] Convex production `dapper-gecko-926` identified, but not yet changed/published.
+
+Paystack activation and billing hardening are **not Free-launch blockers**; preserve
+them for after the hackathon. Do not charge users or make paid tiers selectable.
+
+## September 20 recovery — guidance tools and emerald theme
+
+- [x] Selected-card Discuss with AI dialog using the existing GPT Live 1 broker;
+  separate explicit Start voice, no other cards/memories in its context.
+- [x] Six transformation formats, custom instructions and accessible help tips;
+  persisted child records, Convex files, Word/text/media downloads and deletion.
+- [x] Backend media allowances: Free one MP3 and one infographic per UTC day;
+  Premium three each; Plus five each. MP3 duration validation rejects over 120 seconds.
+- [x] Transformation records included in private application JSON export.
+- [x] Emerald dark palette and persistent light/dark controls on homepage, auth,
+  dashboard and footer; green surfaces, mint accents and scrollbars.
+- [x] All 69 automated tests across 13 files pass; targeted lint passes. Full
+  frontend build passes; the earlier Windows output-folder lock is resolved.
+- [x] Clean TypeScript check passes with ES2020; stale incremental diagnostic
+  cache identified. Main emerald text/button/sidebar contrast pairs exceed 4.5:1
+  by calculation (not a substitute for whole-page accessibility acceptance).
+- [ ] Final development deployment and live voice/media probes: blocked by local
+  HTTPS certificate verification/connectivity failure reaching Convex. The prior
+  interrupted deployment outcome is not assumed successful. No real voice result
+  or media generation is claimed from this recovery run.
+- [ ] Authenticated browser acceptance of both themes, nested guidance dialogs,
+  downloads/deletion and both voice entry points; actual microphone/playback/hangup.
+
+See `docs/guidance-transformations.md` and `docs/submission-readiness.md` for current
+behavior and a prioritized distinction between hackathon and full-product readiness.
+Paystack remains paused; no production deployment/publication or submission made.
+
+## USD test-plan setup — September 20, 2026
+
+- [x] Add and deploy operator-only Paystack test plan setup with existing-plan reconciliation and amount/currency verification; TypeScript and targeted lint pass.
+- [ ] Create/configure Premium USD $20/month and Premium Plus USD $50/month: blocked by Paystack's currency-related rejection of the USD creation request. No NGN fallback, automatic POST retry, customer subscription or charge was made. Resolve USD support with Paystack, then retry explicitly.
+
 ## Verified foundation
 
 - [x] Homepage, username/password Convex Auth V2, protected dashboard.
@@ -170,6 +227,24 @@ See `docs/interactive-mode.md` for current behavior, pilot limits and a short ma
 Convex owns durable data and backend execution; Sites owns the frontend. Firecrawl supplies internet data; AgentMail supplies mail. No TinyFish. Global users, no named/default geographic scenario. AI suggestions are not facts or authorization; profile assignment and consequential actions require confirmation.
 
 ## Next execution gates
+
+### September 19 requested improvements
+
+- [x] Guidance submit uses an immediate duplicate-submit guard, disables while generating and displays “Generating AI Guidance”.
+- [x] Guidance history uses full-width compact synopsis cards and Open Card dialogs with vertically scrollable full content. Desktop target is 10:1 with a readable minimum height.
+- [x] Guidance UI TypeScript, targeted lint and full frontend build passed on September 19. No backend deployment was needed for this UI-only slice.
+- [ ] Browser acceptance of guidance loading state, keyboard dialog return, scrolling and mobile layout.
+- [x] Implemented client registry with automatically assigned IDs, sender/ID matching and quarantine, bounded Luna triage, opt-in fixed acknowledgements and profile-scoped AgentMail Handler workspace. Development implementation; live acceptance below remains open.
+- [ ] Verify the client-service flow while the owner is offline, including duplicate/loop protection and explicit approval for substantive replies. Existing five-minute polling alone does not complete this feature.
+- [x] Added Free, Premium and Premium Plus backend-enforced capacity/monthly allowances, preserving consumed usage across tier changes.
+- [x] Replaced Dodo with Paystack hosted checkout, owned subscription management links and API-polled payment/subscription verification; missing credentials fail safely. No webhook required.
+- [x] Paid-only dedicated AgentMail inbox provisioning: one new inbox per Premium/Premium Plus account, provider capacity preflight (default ceiling three total), and visible capacity failure. Existing inboxes preserved.
+- [ ] Configure Paystack test secret and two monthly plan codes, then verify checkout, renewals, cancellation, failed payments and management links against the test account.
+- [ ] Add AgentMail capacity before scaling beyond the free account's three total inboxes; with one existing inbox, at most two slots remain. Live provisioning acceptance still requires a deliberate test allocation.
+- [ ] Complete billing recovery/refund/dispute handling, remaining-usage display, mail queue pagination, client editing/reactivation, retention and suppression reconciliation before public launch. See `docs/billing-and-tiers.md`.
+- [x] September 19 recovery/Paystack verification: 61 tests across 12 files pass; TypeScript, changed-source lint and all five frontend build stages pass. Final backend push succeeded on development `robust-lemur-250`. Client credential-pattern scan: zero hits in 24 JavaScript files.
+- [ ] Authenticated browser acceptance remains open: browser connection cannot initialize. Live Paystack and AgentMail provisioning acceptance require configured test plans and an explicitly allocated inbox slot; no real payment/inbox/email/voice was created by automated tests.
+- [x] Local preview recovered using `npm run start -- --port 3000` after development startup stalled. Homepage, sign-in, dashboard and privacy returned HTTP 200 at `http://127.0.0.1:3000`. Built preview retained; frontend edits require a rebuild/restart (this is not the hot-reloading dev server).
 
 1. Development deployment, TypeScript, full frontend build and AgentMail connectivity passed.
 2. Verify incoming mail via API polling; no webhook or additional secret is needed.

@@ -1,16 +1,20 @@
 import { v, ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
-import { RateLimiter, DAY } from "@convex-dev/rate-limiter";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { RateLimiter, DAY, MINUTE } from "@convex-dev/rate-limiter";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal, components } from "./_generated/api";
 import schema from "./schema";
+import { route } from "./clientMail";
+import { consume, accountTier } from "./entitlements";
+import { TIERS } from "./tierPolicy";
 import type { Id } from "./_generated/dataModel";
 import { draftSchema } from "./mailContracts";
 const limits = new RateLimiter(components.rateLimiter, {
+  provisioning: { kind: "fixed window", rate: 1, period: MINUTE },
   inboxDay: { kind: "fixed window", rate: 2, period: DAY },
   inboxGlobal: { kind: "fixed window", rate: 20, period: DAY },
-  sendDay: { kind: "fixed window", rate: 5, period: DAY },
-  sendGlobal: { kind: "fixed window", rate: 50, period: DAY },
+  sendDay: { kind: "fixed window", rate: 100, period: DAY },
+  sendGlobal: { kind: "fixed window", rate: 1000, period: DAY },
 });
 export const list = query({
   args: { objectiveId: v.id("objectives") }, returns: v.object({ inbox: v.union(v.null(), schema.doc("mailInboxes")), drafts: v.array(schema.doc("mailDrafts")), messages: v.array(schema.doc("mailMessages")) }),
@@ -29,6 +33,12 @@ export const createInbox = mutation({
     if (!ownerId || profile?.ownerId !== ownerId || profile.archived) throw new ConvexError("Profile not found.");
     const existing = await ctx.db.query("mailInboxes").withIndex("by_profileId", q => q.eq("profileId", profileId)).unique();
     if (existing) return existing._id;
+    const cap=TIERS[await accountTier(ctx,ownerId)].inboxes;
+    if(!cap)throw new ConvexError("A Premium or Premium Plus subscription is required to create a customer-service inbox.");
+    const ownedInboxes=await ctx.db.query("mailInboxes").withIndex("by_ownerId",q=>q.eq("ownerId",ownerId)).take(cap);
+    if(ownedInboxes.length>=cap)throw new ConvexError("Your account already has its dedicated inbox. Select its profile to manage client mail.");
+    const reservation=await limits.limit(ctx,"provisioning");
+    if(!reservation.ok)throw new ConvexError("Inbox setup is busy. Please try again in one minute.");
     await limits.limit(ctx, "inboxDay", { key: ownerId, throws: true });
     await limits.limit(ctx, "inboxGlobal", { throws: true });
     const id = await ctx.db.insert("mailInboxes", { ownerId, profileId, status: "pending" });
@@ -39,11 +49,12 @@ export const createInbox = mutation({
 export const claimInbox = internalMutation({ args: { id: v.id("mailInboxes") }, returns: v.union(v.null(), schema.doc("mailInboxes")), handler: async (ctx, { id }) => {
   const inbox = await ctx.db.get("mailInboxes", id); if (!inbox || inbox.provisioningStarted || inbox.status !== "pending") return null;
   const profile = await ctx.db.get("profiles", inbox.profileId); if (profile?.ownerId !== inbox.ownerId || profile.archived) return null;
+  if(await accountTier(ctx,inbox.ownerId)==="free")return null;
   await ctx.db.patch("mailInboxes", id, { provisioningStarted: true }); return inbox;
 } });
-export const finishInbox = internalMutation({ args: { id: v.id("mailInboxes"), providerId: v.optional(v.string()), address: v.optional(v.string()) }, returns: v.null(), handler: async (ctx, args) => {
+export const finishInbox = internalMutation({ args: { id: v.id("mailInboxes"), providerId: v.optional(v.string()), address: v.optional(v.string()), error:v.optional(v.string()) }, returns: v.null(), handler: async (ctx, args) => {
   const inbox = await ctx.db.get("mailInboxes", args.id); if (!inbox || inbox.status !== "pending") return null;
-  await ctx.db.patch("mailInboxes", args.id, args.providerId && args.address ? { status: "ready", providerId: args.providerId, address: args.address } : { status: "failed", error: "Inbox setup needs administrator review before retrying, to avoid duplicate inboxes." }); return null;
+  await ctx.db.patch("mailInboxes", args.id, args.providerId && args.address ? { status: "ready", providerId: args.providerId, address: args.address, nextPollAt:Date.now() } : { status: "failed", error: args.error??"Inbox setup needs administrator review before retrying, to avoid duplicate inboxes." }); return null;
 } });
 export const saveDraft = mutation({
   args: { objectiveId: v.id("objectives"), id: v.optional(v.id("mailDrafts")), version: v.optional(v.number()), to: v.string(), subject: v.string(), body: v.string() }, returns: v.id("mailDrafts"),
@@ -55,6 +66,7 @@ export const saveDraft = mutation({
     if (args.id) {
       const draft = await ctx.db.get("mailDrafts", args.id);
       if (draft?.ownerId !== ownerId || draft.objectiveId !== args.objectiveId || draft.version !== args.version || !["draft", "approved"].includes(draft.status)) throw new ConvexError("Draft changed or cannot be edited. Reload it.");
+      if (draft.replyToMessageId && input.data.to.toLowerCase() !== draft.to.toLowerCase()) throw new ConvexError("Client replies must keep the registered recipient. Create a separate draft for another recipient.");
       await ctx.db.patch("mailDrafts", args.id, { ...input.data, version: draft.version + 1, status: "draft", approvedVersion: undefined, approvalExpiresAt: undefined, updatedAt: Date.now() }); return args.id;
     }
     const drafts = await ctx.db.query("mailDrafts").withIndex("by_objectiveId", q => q.eq("objectiveId", args.objectiveId)).take(20);
@@ -81,6 +93,7 @@ export const send = mutation({
     if (draft.approvedProfileUpdatedAt !== profile.updatedAt) throw new ConvexError("Profile changed. Review and approve this message again.");
     const inbox = await ctx.db.query("mailInboxes").withIndex("by_profileId", q => q.eq("profileId", draft.profileId)).unique();
     if (inbox?.status !== "ready" || !inbox.providerId) throw new ConvexError("Create an inbox first.");
+    await consume(ctx,ownerId,"mail");
     await limits.limit(ctx, "sendDay", { key: ownerId, throws: true }); await limits.limit(ctx, "sendGlobal", { throws: true });
     await ctx.db.patch("mailDrafts", id, { status: "sending", updatedAt: Date.now() });
     await ctx.scheduler.runAfter(0, internal.mailActions.sendApproved, { id, version });
@@ -101,14 +114,15 @@ export const finishSend = internalMutation({ args: { id: v.id("mailDrafts"), ver
   await ctx.db.patch("mailDrafts", args.id, args.messageId && args.threadId ? { status: "sent", providerMessageId: args.messageId, threadId: args.threadId, updatedAt: Date.now() } : { status: "uncertain", error: "Delivery outcome is uncertain. Do not resend until the administrator checks AgentMail.", updatedAt: Date.now() }); return null;
 } });
 export const receive = internalMutation({
-  args: { inboxId: v.string(), messageId: v.string(), threadId: v.string(), sender: v.string(), subject: v.string(), body: v.string() }, returns: v.null(), handler: async (ctx, args) => {
+  args: { inboxId: v.string(), messageId: v.string(), threadId: v.string(), sender: v.string(), subject: v.string(), body: v.string(), safe:v.optional(v.boolean()), automatic:v.optional(v.boolean()), receivedAt:v.optional(v.number()) }, returns: v.null(), handler: async (ctx, args) => {
     const inbox = await ctx.db.query("mailInboxes").withIndex("by_providerId", q => q.eq("providerId", args.inboxId)).unique(); if (!inbox || inbox.status !== "ready") return null;
     const profile = await ctx.db.get("profiles", inbox.profileId);
     if (profile?.ownerId !== inbox.ownerId || profile.archived) return null;
     const existing = await ctx.db.query("mailMessages").withIndex("by_profileId_and_providerMessageId", q => q.eq("profileId", inbox.profileId).eq("providerMessageId", args.messageId)).unique();
     if (!existing) {
       const draft = await ctx.db.query("mailDrafts").withIndex("by_profileId_and_threadId", q => q.eq("profileId", inbox.profileId).eq("threadId", args.threadId)).first();
-      await ctx.db.insert("mailMessages", { ownerId: inbox.ownerId, profileId: inbox.profileId, ...(draft ? { objectiveId: draft.objectiveId } : {}), providerMessageId: args.messageId, threadId: args.threadId, sender: args.sender.slice(0, 1000), subject: args.subject.slice(0, 200), body: args.body.slice(0, 10000) });
+      const messageId=await ctx.db.insert("mailMessages", { ownerId: inbox.ownerId, profileId: inbox.profileId, ...(draft ? { objectiveId: draft.objectiveId } : {}), providerMessageId: args.messageId, threadId: args.threadId, sender: args.sender.slice(0, 1000), subject: args.subject.slice(0, 200), body: args.body.slice(0, 10000) });
+      await route(ctx,messageId,args.safe===true,args.automatic!==false,args.receivedAt);
     }
     return null;
   },

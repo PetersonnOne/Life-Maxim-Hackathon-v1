@@ -1,10 +1,11 @@
 import { ConvexError, v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { RateLimiter, MINUTE, DAY } from "@convex-dev/rate-limiter";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { consume } from "./entitlements";
 import { evidenceInput, evidenceListSchema, searchInputSchema } from "./researchContracts";
 
 const limits = new RateLimiter(components.rateLimiter, {
@@ -29,6 +30,7 @@ export const request = mutation({
     }
     const latest = await ctx.db.query("researchRuns").withIndex("by_objectiveId", q => q.eq("objectiveId", args.objectiveId)).order("desc").first();
     if (latest?.status === "pending") throw new ConvexError("Research is already running.");
+    await consume(ctx,ownerId,"research");
     await limits.limit(ctx, "researchMinute", { key: ownerId, throws: true });
     await limits.limit(ctx, "researchDay", { key: ownerId, throws: true });
     await limits.limit(ctx, "researchGlobal", { throws: true });

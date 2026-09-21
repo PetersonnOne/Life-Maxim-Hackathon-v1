@@ -1,10 +1,11 @@
 import { ConvexError, v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { createThread } from "@convex-dev/agent";
 import { RateLimiter, MINUTE, DAY } from "@convex-dev/rate-limiter";
 import { components, internal } from "./_generated/api";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import schema from "./schema";
+import { consume } from "./entitlements";
 import type { Id } from "./_generated/dataModel";
 import { guidance } from "./aiContracts";
 import { modelForTask } from "./modelRouting";
@@ -16,9 +17,10 @@ const limits = new RateLimiter(components.rateLimiter, {
 });
 
 export const consumeSuggestionQuota = internalMutation({
-  args: {}, returns: v.null(), handler: async ctx => {
+  args: { meter: v.optional(v.union(v.literal("lightAI"), v.literal("heavyAI"))) }, returns: v.null(), handler: async (ctx, args) => {
     const ownerId = await getAuthUserId(ctx);
     if (!ownerId) throw new ConvexError("Please sign in.");
+    await consume(ctx,ownerId,args.meter ?? "lightAI");
     await limits.limit(ctx, "aiMinute", { key: ownerId, throws: true });
     await limits.limit(ctx, "aiDay", { key: ownerId, throws: true });
     await limits.limit(ctx, "globalDay", { throws: true });
@@ -42,6 +44,7 @@ export const requestGuidance = mutation({
     }
     const latest = await ctx.db.query("aiGuidance").withIndex("by_objectiveId", q => q.eq("objectiveId", objective._id)).order("desc").first();
     if (latest?.status === "pending") throw new ConvexError("An answer is already being prepared.");
+    await consume(ctx,ownerId,"heavyAI");
     await limits.limit(ctx, "aiMinute", { key: ownerId, throws: true });
     await limits.limit(ctx, "aiDay", { key: ownerId, throws: true });
     await limits.limit(ctx, "globalDay", { throws: true });

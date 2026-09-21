@@ -1,5 +1,7 @@
 # Convex Auth V2 readiness review
 
+September 20 update: the owner chose evaluation of production-supported authentication, not an immediate provider replacement. See [migration evaluation](auth-migration-evaluation.md). Verified external recovery email is the selected recovery channel. No existing credentials or accounts have been migrated.
+
 Reviewed September 13, 2026 against the installed package, application wiring and the current [official password guide](https://auth-v2.previews.convex.dev/login-providers/password).
 
 ## Current state

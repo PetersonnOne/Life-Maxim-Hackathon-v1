@@ -1,4 +1,4 @@
-import { getAuthUserId } from "@convex-dev/auth/core";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { query } from "./_generated/server";
@@ -10,10 +10,10 @@ export const page = query({
   args: { table: exportTable, paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(v.union(
     schema.doc("profiles"), schema.doc("objectives"), schema.doc("memories"),
-    schema.doc("tasks"), schema.doc("activityEvents"), schema.doc("aiGuidance"),
+    schema.doc("tasks"), schema.doc("activityEvents"), schema.doc("aiGuidance"), schema.doc("guidanceTransformations"),
     schema.doc("researchRuns"), schema.doc("evidence"), schema.doc("planProposals"),
     schema.doc("mailInboxes"), schema.doc("mailDrafts"), schema.doc("mailMessages"),
-    schema.doc("interactiveSessions"), schema.doc("voiceConnections"),
+    schema.doc("interactiveSessions"), schema.doc("voiceConnections"), schema.doc("clients"), schema.doc("billingAccounts"),
   )),
   handler: async (ctx, args) => {
     const ownerId = await getAuthUserId(ctx);

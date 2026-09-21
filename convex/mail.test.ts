@@ -12,6 +12,7 @@ async function fixture() {
   const user = await t.run(ctx => ctx.db.insert("users", { name: "Mail test" }));
   const stranger = await t.run(ctx => ctx.db.insert("users", { name: "Other mail test" }));
   const owner = t.withIdentity({ subject: user }); const other = t.withIdentity({ subject: stranger });
+  await t.run(ctx=>ctx.db.insert("billingAccounts",{ownerId:user,provider:"paystack",tier:"premium",expiresAt:Date.now()+86400000,generation:0,nextCheckAt:0,status:"active",environment:"test"}));
   const profileId = await owner.mutation(api.profiles.create, { name: "Test profile", description: "", role: "", industry: "" });
   const objectiveId = await owner.mutation(api.objectives.create, { profileId, title: "Mail test", description: "", desiredOutcome: "", requestId: "mail-entry" });
   const inboxId = await owner.mutation(api.mail.createInbox, { profileId });
