@@ -10,9 +10,9 @@
 - **Components:** @convex-dev/auth (core, password provider, username), @convex-dev/agent, @convex-dev/rate-limiter, @convex-dev/workflow
 - **Convex features:** schema, indexes, queries, mutations, actions, scheduled functions, crons, realtime queries, ownership checks, file storage, paginated queries
 - **Auth:** Convex Auth
-- **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; backend audio probe passed, browser acceptance pending); gpt-4o-mini-tts and gpt-image-2 (implemented, media acceptance pending)
+- **AI models:** openai/gpt-5.6-luna, openai/gpt-5.6-terra (OpenRouter); gpt-live-1 (OpenAI; backend audio probe passed, browser microphone acceptance pending); gpt-4o-mini-tts and gpt-image-2 (production generation, persistence and download accepted)
 - **Started:** 2026-09-10T02:42:52Z
-- **Last updated:** 2026-09-21T19:37:44Z
+- **Last updated:** 2026-09-21T21:55:00Z
 
 ## Log
 
@@ -97,3 +97,20 @@ Configured production `APP_URL` to the canonical replacement Site, `https://life
 Completed a real public production journey with a disposable account: signup, profile and entry creation, Terra guidance, a saved article transformation, text download, refresh persistence, sign-out and returning sign-in all passed. The theme preference also persisted. Interactive Mode reached its explicit Start voice control and handled denied microphone permission without creating a paid provider session.
 
 A follow-up release check caught a frontend bundle built against the development Convex URL. The affected version was immediately rolled back; a corrected build contains the production URL and no development URL. This check is now part of the release evidence before republishing.
+
+Published and verified corrected public version 4. Returning production sign-in
+passed, the dashboard showed no horizontal document overflow at a 390 x 844 mobile
+viewport, and the corrected Interactive Mode wording was visible.
+
+Completed the bounded production media acceptance without retries. One
+`gpt-4o-mini-tts` transformation created a stored 67-second narration and its MP3
+download succeeded. One `gpt-image-2` transformation created a stored infographic
+and its 1.60 MB PNG download succeeded. Both outputs remained attached to the
+selected guidance card and exposed the expected text/Word companion downloads.
+No second provider attempt was made.
+
+Post-acceptance verification passed: TypeScript, all 76 automated tests across 15
+files, and the full five-stage frontend build. Browser microphone/playback remains
+a manual acceptance item because the isolated automated browser cannot grant
+microphone permission; the separate bounded backend GPT Live 1 audio/transcript
+probe is retained as transport-level evidence.

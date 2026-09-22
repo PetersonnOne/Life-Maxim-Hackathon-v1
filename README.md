@@ -1,4 +1,86 @@
-# vinext-starter
+# Life Maxim
+
+## Submission Description
+
+### A clearer mind. A more possible life.
+
+Life Maxim is a context-aware AI workspace that helps people turn thoughts, questions, and ambitions into researched guidance and actionable plans—for life, work, and business.
+
+Its defining idea is simple: **your life does not fit into one job title, and your software should not force it to.**
+
+Instead of hardcoding the experience around a clinic, law firm, shop, or single profession, Life Maxim lets users define their own contextual profiles. A person can be a founder at work, a parent at home, a community organizer on weekends, and a learner pursuing something new. A lawyer, health worker, business owner, or student can bring their own goals and constraints into the same flexible workspace.
+
+**The user defines the context. Life Maxim helps them move forward within it.**
+
+### The Problem
+
+People juggle responsibilities across disconnected tools: chat conversations, notes, search results, task lists, and email. Useful advice gets buried, context must be repeated, and turning an idea into practical next steps takes extra work. Generic AI conversations can also mix unrelated parts of a person's life.
+
+Life Maxim brings those pieces together while keeping each profile's context distinct.
+
+### How It Works
+
+1. Create a contextual profile or ask AI to suggest one for your confirmation.
+2. Start an entry with a question, challenge, idea, or objective.
+3. Generate guidance grounded in that entry and its selected profile's confirmed context.
+4. Research the web with Firecrawl and retain source links, excerpts, and retrieval dates.
+5. Compare options and review an editable plan before explicitly accepting tasks.
+6. Revisit saved guidance, discuss it with AI, or transform it into reusable content.
+
+Users can navigate through **User Mode** or talk through their thinking in **Interactive Mode**. The goal is continuity: useful thinking becomes something users can return to and build upon.
+
+### Notable Features
+
+- **Flexible contextual profiles:** Support different roles, professions, businesses, and personal responsibilities without a fixed industry template.
+- **Context-aware AI guidance:** Use the selected profile's confirmed information and relevant stored context rather than indiscriminately combining unrelated profiles.
+- **Voice interaction:** GPT Live 1 powers Interactive Mode and selected-guidance conversations through “Discuss with AI.”
+- **Evidence-backed research:** Firecrawl brings internet information into the workspace with traceable sources.
+- **Decision support and planning:** Compare options, examine assumptions, and approve plans before creating tasks.
+- **Reusable transformations:** Turn guidance into articles, meeting briefs, business notes, custom text, summarized MP3 audio, and infographics. Saved outputs remain attached to their source guidance, with download and deletion controls.
+- **AgentMail workflow:** Register clients with assigned IDs, organize incoming correspondence, support AI-assisted triage and drafting, and keep user review central to responses. Background polling supports inbox work even when the user is offline.
+- **Read-only WebMCP tools:** Expose protected workspace information to compatible browser agents without granting email-send or approval authority.
+- **Realtime persistence:** Convex keeps profiles, objectives, guidance, plans, activity, and stored assets connected across the experience.
+
+### Why I Built It
+
+I wanted a tool that adapts to the whole person—not just one profession or one workflow. People should not need a separate AI product every time they change roles or pursue a different goal.
+
+Life Maxim combines conversation, context, research, and action in one place. Its distinction is not simply offering another chatbot: it gives useful conversations a durable home, a clear context, and a path toward practical action.
+
+### Tech Stack
+
+- **Convex:** Realtime database, backend functions, authentication, scheduled jobs, and file storage.
+- **Firecrawl:** Web research and source retrieval.
+- **AgentMail:** Email inbox and correspondence integration.
+- **OpenAI:** GPT Live 1 voice interaction, GPT-4o Mini TTS audio generation, and GPT-Image-2 infographic generation.
+- **OpenRouter:** Separately funded Terra and Luna API calls for substantive guidance and lighter preparation tasks.
+- **React and TypeScript:** Web interface, with ChatGPT Sites hosting.
+- **WebMCP:** Protected, read-only browser-agent tools.
+- **Codex:** Development, debugging, test assistance, and release work.
+
+### Challenges and Engineering Decisions
+
+The central challenge was making a broad, flexible product feel coherent while protecting contextual boundaries. Other challenges included authentication migration without discarding existing accounts, reliable production deployment, browser and network testing constraints, and controlling the cost of voice and media generation.
+
+The implementation separates lightweight preparation from substantive reasoning and live voice. Provider secrets stay on the backend. Ownership checks protect user records, generated files stay associated with their source guidance, and uncertain email sends are not blindly retried.
+
+### Validation and Milestones
+
+- Published a public ChatGPT Sites release backed by Convex production.
+- Passed a recorded run of 76 automated tests, including migration and cross-account checks, alongside TypeScript and build checks.
+- Verified production re-login and a mobile dashboard check at 390px without horizontal overflow.
+- Verified generation and download of a 67-second MP3 and an infographic during production acceptance.
+- Manually verified voice microphone input, playback, interruption, and hang-up in a normal browser.
+
+These are engineering and acceptance milestones, not claims of user traction.
+
+**Life Maxim: one person, many roles, a workspace that adapts.**
+
+---
+
+## Starter and Development Reference
+
+The following reference documents the underlying vinext starter. Optional starter capabilities are not necessarily used by Life Maxim, whose application backend and authentication run on Convex.
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
 

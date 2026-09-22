@@ -2,6 +2,33 @@
 
 Status: done / in progress / todo / blocked. Completion requires evidence, not just code.
 
+## Production acceptance — September 21, version 4
+
+- [x] Public ChatGPT Sites version 4 is active at
+  `https://life-maxim.newrealmlevel.chatgpt.site` and remains connected to Convex
+  production `dapper-gecko-926`.
+- [x] Returning username/password sign-in passed with a disposable production
+  account after publication; the authenticated workspace and saved test records
+  remained accessible.
+- [x] Mobile dashboard acceptance at a 390 x 844 viewport found no horizontal
+  document overflow. The corrected Interactive Mode wording is present.
+- [x] One bounded production MP3 attempt completed without retry. The 67-second
+  narration reached `ready`, persisted under its source guidance card, and its MP3
+  downloaded successfully from Convex file storage.
+- [x] One bounded production infographic attempt completed without retry. The
+  image reached `ready`, persisted under the same guidance card, and its 1.60 MB
+  PNG downloaded successfully from Convex file storage.
+- [x] Post-acceptance verification passes: TypeScript, all 76 tests across 15
+  files, and the full five-stage frontend build.
+- [ ] Human microphone/playback acceptance for both Interactive Mode voice entry
+  points. The automated browser cannot grant microphone permission; the earlier
+  backend GPT Live 1 audio/transcript probe remains the transport-level evidence.
+- [ ] Controlled AgentMail production round trip with an owner-approved recipient
+  and message, followed by polling, client-ID routing, acknowledgement, approval,
+  delivery-state reconciliation and duplicate/loop checks.
+- [ ] Submission assets: record the final demo, publish the required social post,
+  and complete the hackathon submission form.
+
 ## Free public release decision — September 20
 
 - [x] ChatGPT Sites confirmed as host. Owner confirms public GitHub repository,
